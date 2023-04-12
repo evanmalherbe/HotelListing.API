@@ -28,7 +28,10 @@ namespace HotelListing.API.Controllers
           {
               return NotFound();
           }
-            return await _context.Countries.ToListAsync();
+
+          List<Country> countries = await _context.Countries.ToListAsync();
+
+          return Ok(countries);
         }
 
         // GET: api/Countries/5
@@ -46,7 +49,7 @@ namespace HotelListing.API.Controllers
                 return NotFound();
             }
 
-            return country;
+            return Ok(country);
         }
 
         // PUT: api/Countries/5
@@ -56,7 +59,7 @@ namespace HotelListing.API.Controllers
         {
             if (id != country.Id)
             {
-                return BadRequest();
+                return BadRequest("Invalid record Id");
             }
 
             _context.Entry(country).State = EntityState.Modified;
