@@ -30,7 +30,7 @@ namespace HotelListing.API.Controllers
         // GET: api/Countries
         [HttpGet]
         public async Task<ActionResult<IEnumerable<GetCountryDTO>>> GetCountries()
-		{
+		    {
           List<Country> countries = await _countriesRepository.GetAllAsync();
           List<GetCountryDTO> records = _mapper.Map<List<GetCountryDTO>>(countries);
 
@@ -100,29 +100,29 @@ namespace HotelListing.API.Controllers
 		// POST: api/Countries
 		// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
 		[HttpPost]
-        public async Task<ActionResult<Country>> PostCountry(CreateCountryDTO createCountryDTO)
+    public async Task<ActionResult<Country>> PostCountry(CreateCountryDTO createCountryDTO)
+    {
+        Country country = _mapper.Map<Country>(createCountryDTO);
+
+        await _countriesRepository.AddAsync(country);
+
+        return CreatedAtAction("GetCountry", new { id = country.Id }, country);
+    }
+
+    // DELETE: api/Countries/5
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteCountry(int id)
+    {
+        Country country = await _countriesRepository.GetAsync(id);
+
+        if (country == null)
         {
-            Country country = _mapper.Map<Country>(createCountryDTO);
-
-            await _countriesRepository.AddAsync(country);
-
-            return CreatedAtAction("GetCountry", new { id = country.Id }, country);
+            return NotFound();
         }
 
-        // DELETE: api/Countries/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCountry(int id)
-        {
-            Country country = await _countriesRepository.GetAsync(id);
-
-            if (country == null)
-            {
-                return NotFound();
-            }
-
-            await _countriesRepository.DeleteAsync(id);
+        await _countriesRepository.DeleteAsync(id);
   
-            return NoContent();
-        }
+        return NoContent();
+    }
     }
 }
