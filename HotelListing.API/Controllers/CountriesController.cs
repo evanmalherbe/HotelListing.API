@@ -11,6 +11,7 @@ using AutoMapper;
 using HotelListing.API.Contracts;
 using HotelListing.API.Repository;
 using Microsoft.AspNetCore.Authorization;
+using HotelListing.API.Exceptions;
 
 namespace HotelListing.API.Controllers
 {
@@ -18,16 +19,14 @@ namespace HotelListing.API.Controllers
     [ApiController]
     public class CountriesController : ControllerBase
     {
-        private readonly IMapper _mapper;
-		    private readonly ICountriesRepository _countriesRepository;
-		private readonly ILogger _logger;
+      private readonly IMapper _mapper;
+		  private readonly ICountriesRepository _countriesRepository;
 
-		public CountriesController(IMapper mapper, ICountriesRepository countriesRepository, ILogger<CountriesController> logger)
-		{
-      this._mapper = mapper;
-			this._countriesRepository = countriesRepository;
-			this._logger = logger;
-		}
+		  public CountriesController(IMapper mapper, ICountriesRepository countriesRepository)
+		  {
+        this._mapper = mapper;
+			  this._countriesRepository = countriesRepository;
+		  }
 
       // GET: api/Countries
       [HttpGet]
@@ -47,8 +46,7 @@ namespace HotelListing.API.Controllers
 
           if (country == null)
           {
-              _logger.LogWarning($"No record found in {nameof(GetCountry)} with Id: {id}.");
-              return NotFound();
+            throw new NotFoundException(nameof(GetCountry), id);
           }
 
           GetCountryDetailsDTO countryDTO = _mapper.Map<GetCountryDetailsDTO>(country);
@@ -71,7 +69,7 @@ namespace HotelListing.API.Controllers
 
           if (country == null)
           {
-            return NotFound();
+            throw new NotFoundException(nameof(GetCountries), id);
           }
 
           _mapper.Map(updateCountryDTO, country);
@@ -122,7 +120,7 @@ namespace HotelListing.API.Controllers
 
         if (country == null)
         {
-            return NotFound();
+          throw new NotFoundException(nameof(DeleteCountry), id);
         }
 
         await _countriesRepository.DeleteAsync(id);

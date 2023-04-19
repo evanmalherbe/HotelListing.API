@@ -30,27 +30,17 @@ namespace HotelListing.API.Controllers
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		public async Task<ActionResult> Register([FromBody] ApiUserDTO apiUserDTO)
 		{
-			_logger.LogInformation($"Registration attempt for {apiUserDTO.Email}");
+			IEnumerable<IdentityError> errors = await _authManager.Register(apiUserDTO);
 
-			try
+			if (errors.Any())
 			{
-				IEnumerable<IdentityError> errors = await _authManager.Register(apiUserDTO);
-
-				if (errors.Any())
+				foreach (var error in errors)
 				{
-					foreach (var error in errors)
-					{
-						ModelState.AddModelError(error.Code, error.Description);
-					}
-					return BadRequest(ModelState);
+					ModelState.AddModelError(error.Code, error.Description);
 				}
-				return Ok();
+				return BadRequest(ModelState);
 			}
-			catch (Exception exception)
-			{
-				_logger.LogError(exception, $"Something went wrong in the {nameof(Register)} - User registration attempt for {apiUserDTO.Email}");
-				return Problem($"Something went wrong in the {nameof(Register)}. Please contact support.", statusCode: 500);
-			}
+			return Ok();
 		}
 
 		// POST: api/Account/login
@@ -61,23 +51,13 @@ namespace HotelListing.API.Controllers
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		public async Task<ActionResult> Login([FromBody] LoginDTO loginDTO)
 		{
-			_logger.LogInformation($"Login attempt for {loginDTO.Email}");
+			AuthResponseDTO authResponse = await _authManager.Login(loginDTO);
 
-			try
+			if (authResponse == null)
 			{
-				AuthResponseDTO authResponse = await _authManager.Login(loginDTO);
-
-				if (authResponse == null)
-				{
-					return Unauthorized();
-				}
-				return Ok(authResponse);
+				return Unauthorized();
 			}
-			catch (Exception exception)
-			{
-				_logger.LogError(exception, $"Something went wrong in the {nameof(Login)} - User login attempt for {loginDTO.Email}");
-				return Problem($"Something went wrong in the {nameof(Login)}. Please contact support.", statusCode: 500);
-			}
+			return Ok(authResponse);
 		}
 
 		// POST: api/Account/refreshtoken
