@@ -20,79 +20,80 @@ namespace HotelListing.API.Controllers
     {
         private readonly IMapper _mapper;
 		    private readonly ICountriesRepository _countriesRepository;
+		private readonly ILogger _logger;
 
-		public CountriesController(IMapper mapper, ICountriesRepository countriesRepository)
+		public CountriesController(IMapper mapper, ICountriesRepository countriesRepository, ILogger<CountriesController> logger)
 		{
-    
       this._mapper = mapper;
 			this._countriesRepository = countriesRepository;
+			this._logger = logger;
 		}
 
-        // GET: api/Countries
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<GetCountryDTO>>> GetCountries()
-		    {
-          List<Country> countries = await _countriesRepository.GetAllAsync();
-          List<GetCountryDTO> records = _mapper.Map<List<GetCountryDTO>>(countries);
+      // GET: api/Countries
+      [HttpGet]
+      public async Task<ActionResult<IEnumerable<GetCountryDTO>>> GetCountries()
+		  {
+        List<Country> countries = await _countriesRepository.GetAllAsync();
+        List<GetCountryDTO> records = _mapper.Map<List<GetCountryDTO>>(countries);
 
-          return Ok(records);
-        }
+        return Ok(records);
+      }
 
-        // GET: api/Countries/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<GetCountryDetailsDTO>> GetCountry(int id)
-        {
-           
-            Country country = await _countriesRepository.GetDetails(id);
+      // GET: api/Countries/5
+      [HttpGet("{id}")]
+      public async Task<ActionResult<GetCountryDetailsDTO>> GetCountry(int id)
+      {
+          Country country = await _countriesRepository.GetDetails(id);
 
-            if (country == null)
-            {
-                return NotFound();
-            }
-
-            GetCountryDetailsDTO countryDTO = _mapper.Map<GetCountryDetailsDTO>(country);
-
-            return Ok(countryDTO);
-        }
-
-        // PUT: api/Countries/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        [Authorize]
-        public async Task<IActionResult> PutCountry(int id, UpdateCountryDTO updateCountryDTO)
-        {
-            if (id != updateCountryDTO.Id)
-            {
-                return BadRequest("Invalid record Id");
-            }
-
-            Country country = await _countriesRepository.GetAsync(id);
-
-            if (country == null)
-            {
+          if (country == null)
+          {
+              _logger.LogWarning($"No record found in {nameof(GetCountry)} with Id: {id}.");
               return NotFound();
-            }
+          }
 
-            _mapper.Map(updateCountryDTO, country);
+          GetCountryDetailsDTO countryDTO = _mapper.Map<GetCountryDetailsDTO>(country);
 
-            try
-            {
-                await _countriesRepository.UpdateAsync(country);
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!await CountryExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+          return Ok(countryDTO);
+      }
 
-            return NoContent();
-        }
+      // PUT: api/Countries/5
+      // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+      [HttpPut("{id}")]
+      [Authorize]
+      public async Task<IActionResult> PutCountry(int id, UpdateCountryDTO updateCountryDTO)
+      {
+          if (id != updateCountryDTO.Id)
+          {
+              return BadRequest("Invalid record Id");
+          }
+
+          Country country = await _countriesRepository.GetAsync(id);
+
+          if (country == null)
+          {
+            return NotFound();
+          }
+
+          _mapper.Map(updateCountryDTO, country);
+
+          try
+          {
+              await _countriesRepository.UpdateAsync(country);
+          }
+          catch (DbUpdateConcurrencyException)
+          {
+              if (!await CountryExists(id))
+              {
+                  return NotFound();
+              }
+              else
+              {
+                  throw;
+              }
+          }
+
+          return NoContent();
+      }
 
 		private async Task<bool> CountryExists(int id)
 		{

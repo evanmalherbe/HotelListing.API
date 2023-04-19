@@ -4,6 +4,8 @@ using HotelListing.API.Models.Users;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using System;
 
 namespace HotelListing.API.Controllers
 {
@@ -12,10 +14,12 @@ namespace HotelListing.API.Controllers
 	public class AccountController : ControllerBase
 	{
 		private readonly IAuthManager _authManager;
+		private readonly ILogger<AccountController> _logger;
 
-		public AccountController(IAuthManager authManager)
+		public AccountController(IAuthManager authManager, ILogger<AccountController> logger)
 		{
 			this._authManager = authManager;
+			this._logger = logger;
 		}
 
 		// POST: api/Account/register
@@ -26,17 +30,27 @@ namespace HotelListing.API.Controllers
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		public async Task<ActionResult> Register([FromBody] ApiUserDTO apiUserDTO)
 		{
-			var errors = await _authManager.Register(apiUserDTO);
+			_logger.LogInformation($"Registration attempt for {apiUserDTO.Email}");
 
-			if (errors.Any())
+			try
 			{
-				foreach (var error in errors)
+				IEnumerable<IdentityError> errors = await _authManager.Register(apiUserDTO);
+
+				if (errors.Any())
 				{
-					ModelState.AddModelError(error.Code, error.Description);
+					foreach (var error in errors)
+					{
+						ModelState.AddModelError(error.Code, error.Description);
+					}
+					return BadRequest(ModelState);
 				}
-				return BadRequest(ModelState);
+				return Ok();
 			}
-			return Ok();
+			catch (Exception exception)
+			{
+				_logger.LogError(exception, $"Something went wrong in the {nameof(Register)} - User registration attempt for {apiUserDTO.Email}");
+				return Problem($"Something went wrong in the {nameof(Register)}. Please contact support.", statusCode: 500);
+			}
 		}
 
 		// POST: api/Account/login
@@ -47,13 +61,23 @@ namespace HotelListing.API.Controllers
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		public async Task<ActionResult> Login([FromBody] LoginDTO loginDTO)
 		{
-			AuthResponseDTO authResponse = await _authManager.Login(loginDTO);
+			_logger.LogInformation($"Login attempt for {loginDTO.Email}");
 
-			if (authResponse == null)
+			try
 			{
-				return Unauthorized();
+				AuthResponseDTO authResponse = await _authManager.Login(loginDTO);
+
+				if (authResponse == null)
+				{
+					return Unauthorized();
+				}
+				return Ok(authResponse);
 			}
-			return Ok(authResponse);
+			catch (Exception exception)
+			{
+				_logger.LogError(exception, $"Something went wrong in the {nameof(Login)} - User login attempt for {loginDTO.Email}");
+				return Problem($"Something went wrong in the {nameof(Login)}. Please contact support.", statusCode: 500);
+			}
 		}
 
 		// POST: api/Account/refreshtoken
