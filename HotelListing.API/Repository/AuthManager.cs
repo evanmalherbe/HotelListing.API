@@ -16,6 +16,9 @@ namespace HotelListing.API.Repository
 		private readonly IMapper _mapper;
 		private readonly UserManager<ApiUser> _userManager;
 		private readonly IConfiguration _configuration;
+		private ApiUser _user;
+		private const string _loginProvider = "HotelListingApi";
+		private const string _refreshToken = "RefreshToken";
 
 		public AuthManager(IMapper mapper, UserManager<ApiUser> userManager, IConfiguration configuration)
 		{
@@ -24,55 +27,95 @@ namespace HotelListing.API.Repository
 			this._configuration = configuration;
 		}
 
+		public async Task<string> CreateRefreshToken()
+		{
+			await _userManager.RemoveAuthenticationTokenAsync(_user, _loginProvider, _refreshToken);
+			string newRefreshToken = await _userManager.GenerateUserTokenAsync(_user, _loginProvider, _refreshToken);
+			IdentityResult result = await _userManager.SetAuthenticationTokenAsync(_user, _loginProvider, _refreshToken, newRefreshToken);
+
+			return newRefreshToken;
+		}
+
 		public async Task<AuthResponseDTO> Login(LoginDTO loginDTO)
 		{
-			ApiUser? user = await _userManager.FindByEmailAsync(loginDTO.Email);
-			bool isValidUser = await _userManager.CheckPasswordAsync(user, loginDTO.Password);
+			_user = await _userManager.FindByEmailAsync(loginDTO.Email);
+			bool isValidUser = await _userManager.CheckPasswordAsync(_user, loginDTO.Password);
 
-			if (user == null || isValidUser == false)
+			if (_user == null || isValidUser == false)
 			{
 				return null;
 			}
 
-			string token = await GenerateToken(user);
+			string token = await GenerateToken();
 			return new AuthResponseDTO
 			{
 				Token = token,
-				UserId = user.Id
+				UserId = _user.Id,
+				RefreshToken = await CreateRefreshToken()
 			};
 		}
 
 		public async Task<IEnumerable<IdentityError>> Register(ApiUserDTO userDTO)
 		{
-			ApiUser user = _mapper.Map<ApiUser>(userDTO);
-			user.UserName = userDTO.Email;
+			_user = _mapper.Map<ApiUser>(userDTO);
+			_user.UserName = userDTO.Email;
 
-			IdentityResult result = await _userManager.CreateAsync(user, userDTO.Password);
+			IdentityResult result = await _userManager.CreateAsync(_user, userDTO.Password);
 
 			if (result.Succeeded)
 			{
-				await _userManager.AddToRoleAsync(user, "User");
+				await _userManager.AddToRoleAsync(_user, "User");
 			}
 
 			return result.Errors;
 		}
 
-		private async Task<string> GenerateToken(ApiUser user)
+		public async Task<AuthResponseDTO> VerifyRefreshToken(AuthResponseDTO request)
+		{
+			JwtSecurityTokenHandler jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
+			JwtSecurityToken tokenContent = jwtSecurityTokenHandler.ReadJwtToken(request.Token);
+			string username = tokenContent.Claims.ToList().FirstOrDefault(q => q.Type == Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Email)?.Value;
+
+			_user = await _userManager.FindByNameAsync(username);
+
+			if (_user == null || _user.Id != request.UserId)
+			{
+				return null;
+			}
+
+			var isValidRefreshToken = await _userManager.VerifyUserTokenAsync(_user, _loginProvider, _refreshToken, request.RefreshToken);
+
+			if (isValidRefreshToken)
+			{
+				var token = await GenerateToken();
+				return new AuthResponseDTO
+				{
+					Token = token,
+					UserId = _user.Id,
+					RefreshToken = await CreateRefreshToken()
+				};
+			}
+
+			await _userManager.UpdateSecurityStampAsync(_user);
+			return null;
+		}
+
+		private async Task<string> GenerateToken()
 		{
 			SymmetricSecurityKey securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Key"]));
 
 			SigningCredentials credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-			IList<string> roles = await _userManager.GetRolesAsync(user);
+			IList<string> roles = await _userManager.GetRolesAsync(_user);
 			List<Claim> roleClaims = roles.Select(x => new Claim(ClaimTypes.Role, x)).ToList();
-			IList<Claim> userClaims = await _userManager.GetClaimsAsync(user);
+			IList<Claim> userClaims = await _userManager.GetClaimsAsync(_user);
 
 			IEnumerable<Claim> claims = new List<Claim>
 			{
-				new Claim(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Sub, user.Email),
+				new Claim(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Sub, _user.Email),
 				new Claim(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-				new Claim(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Email,user.Email),
-				new Claim("uid", user.Id),
+				new Claim(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Email,_user.Email),
+				new Claim("uid", _user.Id),
 			}
 			.Union(userClaims).Union(roleClaims);
 
