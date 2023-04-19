@@ -12,6 +12,7 @@ using HotelListing.API.Contracts;
 using HotelListing.API.Repository;
 using Microsoft.AspNetCore.Authorization;
 using HotelListing.API.Exceptions;
+using HotelListing.API.Models;
 
 namespace HotelListing.API.Controllers
 {
@@ -29,14 +30,23 @@ namespace HotelListing.API.Controllers
 			  this._countriesRepository = countriesRepository;
 		  }
 
-      // GET: api/Countries
-      [HttpGet]
+      // GET: api/Countries/GetAll
+      [HttpGet("GetAll")]
       public async Task<ActionResult<IEnumerable<GetCountryDTO>>> GetCountries()
 		  {
         List<Country> countries = await _countriesRepository.GetAllAsync();
         List<GetCountryDTO> records = _mapper.Map<List<GetCountryDTO>>(countries);
 
         return Ok(records);
+      }
+
+      // GET: api/v1/Countries?StartIndex=0&pagesize=25&PageNumber=1
+      [HttpGet]
+      public async Task<ActionResult<PagedResult<GetCountryDTO>>> GetPagedCountries([FromQuery] QueryParameters queryParameters)
+		  {
+        PagedResult<GetCountryDTO> pagedCountriesResult = await _countriesRepository.GetAllAsync<GetCountryDTO>(queryParameters);
+
+        return Ok(pagedCountriesResult);
       }
 
       // GET: api/Countries/5
