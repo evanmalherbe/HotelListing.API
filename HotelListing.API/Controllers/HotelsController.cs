@@ -33,15 +33,8 @@ namespace HotelListing.API.Controllers
         [HttpGet("GetAll")]
         public async Task<ActionResult<IEnumerable<GetHotelDTO>>> GetHotels()
         {
-          List<Hotel> hotels = await _hotelsRepository.GetAllAsync();
-          if (hotels == null)
-          {
-              return NotFound();
-          }
-          
-          List<GetHotelDTO> records = _mapper.Map<List<GetHotelDTO>>(hotels);
-
-          return Ok(records); 
+          var hotels = await _hotelsRepository.GetAllAsync();
+          return Ok(hotels); 
         }
 
         // GET: api/Hotels?StartIndex=0&pagesize=25&PageNumber=1
@@ -58,7 +51,7 @@ namespace HotelListing.API.Controllers
 
           //return Ok(records); 
 
-          PagedResult<GetHotelDTO> pagedHotelsResult = await _hotelsRepository.GetAllAsync<GetHotelDTO>(queryParameters);
+          PagedResult<GetHotelDTO> pagedHotelsResult = await _hotelsRepository.GetAllPagedAsync<GetHotelDTO>(queryParameters);
 
           return Ok(pagedHotelsResult);
         }

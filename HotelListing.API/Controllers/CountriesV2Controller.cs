@@ -13,6 +13,7 @@ using HotelListing.API.Core.Repository;
 using Microsoft.AspNetCore.Authorization;
 using HotelListing.API.Core.Exceptions;
 using Microsoft.AspNetCore.OData.Query;
+using Microsoft.OpenApi.Validations;
 
 namespace HotelListing.API.Controllers
 {
@@ -45,7 +46,7 @@ namespace HotelListing.API.Controllers
       [HttpGet("{id}")]
       public async Task<ActionResult<GetCountryDetailsDTO>> GetCountry(int id)
       {
-          Country country = await _countriesRepository.GetDetails(id);
+          var country = await _countriesRepository.GetDetails(id);
 
           if (country == null)
           {
