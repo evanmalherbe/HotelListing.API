@@ -40,7 +40,8 @@ namespace HotelListing.API.Repository
 
 		public async Task<List<T>> GetAllAsync()
 		{
-			return await _context.Set<T>().ToListAsync();
+			return await _context.Set<T>()
+				.ToListAsync();
 		}
 
 		public async Task<PagedResult<TResult>> GetAllAsync<TResult>(QueryParameters queryParameters)

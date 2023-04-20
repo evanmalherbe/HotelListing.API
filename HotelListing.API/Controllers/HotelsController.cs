@@ -12,6 +12,7 @@ using HotelListing.API.Repository;
 using AutoMapper;
 using HotelListing.API.Models.Hotels;
 using System.Diagnostics.Metrics;
+using HotelListing.API.Models;
 
 namespace HotelListing.API.Controllers
 {
@@ -28,8 +29,8 @@ namespace HotelListing.API.Controllers
 			    this._hotelsRepository = hotelsRepository;
 		    }
 
-        // GET: api/Hotels
-        [HttpGet]
+        // GET: api/Hotels/GetAll
+        [HttpGet("GetAll")]
         public async Task<ActionResult<IEnumerable<GetHotelDTO>>> GetHotels()
         {
           List<Hotel> hotels = await _hotelsRepository.GetAllAsync();
@@ -41,6 +42,25 @@ namespace HotelListing.API.Controllers
           List<GetHotelDTO> records = _mapper.Map<List<GetHotelDTO>>(hotels);
 
           return Ok(records); 
+        }
+
+        // GET: api/Hotels?StartIndex=0&pagesize=25&PageNumber=1
+        [HttpGet]
+        public async Task<ActionResult<PagedResult<GetHotelDTO>>> GetPagedHotels([FromQuery] QueryParameters queryParameters)
+        {
+          //List<Hotel> hotels = await _hotelsRepository.GetAllAsync();
+          //if (hotels == null)
+          //{
+          //    return NotFound();
+          //}
+          
+          //List<GetHotelDTO> records = _mapper.Map<List<GetHotelDTO>>(hotels);
+
+          //return Ok(records); 
+
+          PagedResult<GetHotelDTO> pagedHotelsResult = await _hotelsRepository.GetAllAsync<GetHotelDTO>(queryParameters);
+
+          return Ok(pagedHotelsResult);
         }
 
         // GET: api/Hotels/5
