@@ -6,13 +6,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HotelListing.API.Data;
-using HotelListing.API.Contracts;
-using HotelListing.API.Models.Country;
-using HotelListing.API.Repository;
+using HotelListing.API.Core.Contracts;
+using HotelListing.API.Core.Models.Country;
+using HotelListing.API.Core.Repository;
 using AutoMapper;
-using HotelListing.API.Models.Hotels;
+using HotelListing.API.Core.Models.Hotels;
 using System.Diagnostics.Metrics;
-using HotelListing.API.Models;
+using HotelListing.API.Core.Models;
 
 namespace HotelListing.API.Controllers
 {

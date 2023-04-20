@@ -1,6 +1,6 @@
-﻿using HotelListing.API.Models.Country;
+﻿using HotelListing.API.Core.Models.Country;
 
-namespace HotelListing.API.Models.Hotels
+namespace HotelListing.API.Core.Models.Hotels
 {
 	public class UpdateHotelDTO : BaseHotelDTO
 	{

@@ -1,4 +1,4 @@
-﻿namespace HotelListing.API.Exceptions
+﻿namespace HotelListing.API.Core.Exceptions
 {
 	public class NotFoundException : ApplicationException
 	{

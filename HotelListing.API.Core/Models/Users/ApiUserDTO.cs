@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace HotelListing.API.Models.Users
+namespace HotelListing.API.Core.Models.Users
 {
 	public class ApiUserDTO : LoginDTO
 	{
