@@ -16,6 +16,7 @@ using System.Text;
 using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -130,10 +131,15 @@ builder.Services.AddResponseCaching(options =>
 	options.UseCaseSensitivePaths = true;
 });
 
+// AspNetCore.HealthChecks.SqlServer
+// EF Core - Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore
+
 builder.Services.AddHealthChecks()
 	.AddCheck<CustomHealthCheck>("Custom Health Check", 
 	failureStatus: HealthStatus.Degraded, 
-	tags: new[] {"custom"});
+	tags: new[] {"custom"})
+	.AddSqlServer(connectionString, tags: new[] { "database"})
+	.AddDbContextCheck<HotelListingDbContext>(tags: new[] {"database"});
 
 builder.Services.AddControllers().AddOData(options =>
 {
@@ -159,9 +165,68 @@ app.MapHealthChecks("/healthcheck", new HealthCheckOptions
 		[HealthStatus.Healthy] = StatusCodes.Status200OK,
 		[HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable,
 		[HealthStatus.Degraded] = StatusCodes.Status200OK
-	}
-	
+	},
+	ResponseWriter = WriteResponse
 }) ;
+
+app.MapHealthChecks("/databasehealthcheck", new HealthCheckOptions
+{
+	Predicate = healthcheck => healthcheck.Tags.Contains("database"),
+	ResultStatusCodes =
+	{
+		[HealthStatus.Healthy] = StatusCodes.Status200OK,
+		[HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable,
+		[HealthStatus.Degraded] = StatusCodes.Status200OK
+	},
+	ResponseWriter = WriteResponse
+}) ;
+
+app.MapHealthChecks("/healthz", new HealthCheckOptions
+{ 
+	ResultStatusCodes =
+	{
+		[HealthStatus.Healthy] = StatusCodes.Status200OK,
+		[HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable,
+		[HealthStatus.Degraded] = StatusCodes.Status200OK
+	},
+	ResponseWriter = WriteResponse
+});
+
+static Task WriteResponse(HttpContext context, HealthReport healthReport)
+{
+	context.Response.ContentType = "application/json; charset=utf-8";
+	JsonWriterOptions options = new JsonWriterOptions { Indented = true };
+
+	using MemoryStream memorystream = new MemoryStream();
+	using (Utf8JsonWriter jsonWriter = new Utf8JsonWriter(memorystream, options))
+	{
+		jsonWriter.WriteStartObject();
+		jsonWriter.WriteString("status", healthReport.Status.ToString());
+		jsonWriter.WriteStartObject("results");
+
+		foreach (var healthReportEntry in healthReport.Entries)
+		{
+			jsonWriter.WriteStartObject(healthReportEntry.Key);
+			jsonWriter.WriteString("status", healthReportEntry.Value.Status.ToString());
+			jsonWriter.WriteString("description", healthReportEntry.Value.Description);
+			jsonWriter.WriteStartObject("data");
+
+			foreach (var item in healthReportEntry.Value.Data)
+			{
+				jsonWriter.WritePropertyName(item.Key);
+				JsonSerializer.Serialize(jsonWriter, item.Value, item.Value?.GetType() ?? typeof(object));
+			}
+
+			jsonWriter.WriteEndObject();
+			jsonWriter.WriteEndObject();
+		}
+
+		jsonWriter.WriteEndObject();
+		jsonWriter.WriteEndObject();
+	}
+
+	return context.Response.WriteAsync(Encoding.UTF8.GetString(memorystream.ToArray()));
+}
 
 app.UseSerilogRequestLogging();
 
