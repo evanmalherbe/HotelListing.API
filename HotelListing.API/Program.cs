@@ -14,6 +14,8 @@ using Serilog;
 using System.Security.Cryptography.Xml;
 using System.Text;
 using Microsoft.OpenApi.Models;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -128,6 +130,11 @@ builder.Services.AddResponseCaching(options =>
 	options.UseCaseSensitivePaths = true;
 });
 
+builder.Services.AddHealthChecks()
+	.AddCheck<CustomHealthCheck>("Custom Health Check", 
+	failureStatus: HealthStatus.Degraded, 
+	tags: new[] {"custom"});
+
 builder.Services.AddControllers().AddOData(options =>
 {
 	options.Select().Filter().OrderBy();
@@ -143,6 +150,18 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ExceptionMiddleware>();
+
+app.MapHealthChecks("/healthcheck", new HealthCheckOptions
+{
+	Predicate = healthcheck => healthcheck.Tags.Contains("custom"),
+	ResultStatusCodes =
+	{
+		[HealthStatus.Healthy] = StatusCodes.Status200OK,
+		[HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable,
+		[HealthStatus.Degraded] = StatusCodes.Status200OK
+	}
+	
+}) ;
 
 app.UseSerilogRequestLogging();
 
@@ -169,3 +188,17 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+class CustomHealthCheck : IHealthCheck
+{
+	public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+	{
+		var isHealthy = true;
+
+		if (isHealthy)
+		{
+			return Task.FromResult(HealthCheckResult.Healthy("All systems are looking good."));
+		}
+		return Task.FromResult(new HealthCheckResult(context.Registration.FailureStatus, "System unhealthy"));
+	}
+}
