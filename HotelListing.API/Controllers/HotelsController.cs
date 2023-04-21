@@ -33,7 +33,7 @@ namespace HotelListing.API.Controllers
         [HttpGet("GetAll")]
         public async Task<ActionResult<IEnumerable<GetHotelDTO>>> GetHotels()
         {
-          var hotels = await _hotelsRepository.GetAllAsync<List<GetHotelDTO>>();
+          var hotels = await _hotelsRepository.GetAllAsync<GetHotelDTO>();
           return Ok(hotels); 
         }
 
@@ -41,17 +41,7 @@ namespace HotelListing.API.Controllers
         [HttpGet]
         public async Task<ActionResult<PagedResult<GetHotelDTO>>> GetPagedHotels([FromQuery] QueryParameters queryParameters)
         {
-          //List<Hotel> hotels = await _hotelsRepository.GetAllAsync();
-          //if (hotels == null)
-          //{
-          //    return NotFound();
-          //}
-          
-          //List<GetHotelDTO> records = _mapper.Map<List<GetHotelDTO>>(hotels);
-
-          //return Ok(records); 
-
-        PagedResult<GetHotelDTO> pagedHotelsResult = await _hotelsRepository.GetAllPagedAsync<GetHotelDTO>(queryParameters);
+          PagedResult<GetHotelDTO> pagedHotelsResult = await _hotelsRepository.GetAllPagedAsync<GetHotelDTO>(queryParameters);
 
           return Ok(pagedHotelsResult);
         }
@@ -61,14 +51,6 @@ namespace HotelListing.API.Controllers
         public async Task<ActionResult<GetHotelDetailsDTO>> GetHotel(int id)
         {
           GetHotelDetailsDTO hotel =  await _hotelsRepository.GetAsync<GetHotelDetailsDTO>(id);
-
-          //if (hotel == null)
-          //{
-          //    return NotFound();
-          //}
-          
-          //GetHotelDetailsDTO hotelDTO = _mapper.Map<GetHotelDetailsDTO>(hotel);
-
           return Ok(hotel);
         }
 
@@ -115,13 +97,6 @@ namespace HotelListing.API.Controllers
         [HttpPost]
         public async Task<ActionResult<Hotel>> PostHotel(CreateHotelDTO createHotelDTO)
 		    {
-          //Hotel hotel = _mapper.Map<Hotel>(createHotelDTO);
-
-          //if (hotel == null)
-          //{
-          //    return Problem("Entity set 'HotelListingDbContext.Hotels'  is null.");
-          //}
-
           GetHotelDTO hotel = await _hotelsRepository.AddAsync<CreateHotelDTO, GetHotelDTO>(createHotelDTO);
 
           return CreatedAtAction(nameof(GetHotel), new { id = hotel.Id }, hotel);
@@ -131,13 +106,6 @@ namespace HotelListing.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteHotel(int id)
         {
-            //Hotel hotel = await _hotelsRepository.GetAsync(id);
-
-            //if (hotel == null)
-            //{
-            //    return NotFound();
-            //}
-
             await _hotelsRepository.DeleteAsync(id);
             return NoContent();
         }
