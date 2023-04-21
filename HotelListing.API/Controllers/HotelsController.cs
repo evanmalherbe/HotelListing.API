@@ -33,7 +33,7 @@ namespace HotelListing.API.Controllers
         [HttpGet("GetAll")]
         public async Task<ActionResult<IEnumerable<GetHotelDTO>>> GetHotels()
         {
-          var hotels = await _hotelsRepository.GetAllAsync();
+          var hotels = await _hotelsRepository.GetAllAsync<List<GetHotelDTO>>();
           return Ok(hotels); 
         }
 
@@ -51,7 +51,7 @@ namespace HotelListing.API.Controllers
 
           //return Ok(records); 
 
-          PagedResult<GetHotelDTO> pagedHotelsResult = await _hotelsRepository.GetAllPagedAsync<GetHotelDTO>(queryParameters);
+        PagedResult<GetHotelDTO> pagedHotelsResult = await _hotelsRepository.GetAllPagedAsync<GetHotelDTO>(queryParameters);
 
           return Ok(pagedHotelsResult);
         }
@@ -60,16 +60,16 @@ namespace HotelListing.API.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<GetHotelDetailsDTO>> GetHotel(int id)
         {
-          Hotel hotel =  await _hotelsRepository.GetDetails(id);
+          GetHotelDetailsDTO hotel =  await _hotelsRepository.GetAsync<GetHotelDetailsDTO>(id);
 
-          if (hotel == null)
-          {
-              return NotFound();
-          }
+          //if (hotel == null)
+          //{
+          //    return NotFound();
+          //}
           
-          GetHotelDetailsDTO hotelDTO = _mapper.Map<GetHotelDetailsDTO>(hotel);
+          //GetHotelDetailsDTO hotelDTO = _mapper.Map<GetHotelDetailsDTO>(hotel);
 
-          return Ok(hotelDTO);
+          return Ok(hotel);
         }
 
         // PUT: api/Hotels/5
@@ -114,32 +114,31 @@ namespace HotelListing.API.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<Hotel>> PostHotel(CreateHotelDTO createHotelDTO)
-		{
-          Hotel hotel = _mapper.Map<Hotel>(createHotelDTO);
+		    {
+          //Hotel hotel = _mapper.Map<Hotel>(createHotelDTO);
 
-          if (hotel == null)
-          {
-              return Problem("Entity set 'HotelListingDbContext.Hotels'  is null.");
-          }
+          //if (hotel == null)
+          //{
+          //    return Problem("Entity set 'HotelListingDbContext.Hotels'  is null.");
+          //}
 
-          await _hotelsRepository.UpdateAsync(hotel);
+          GetHotelDTO hotel = await _hotelsRepository.AddAsync<CreateHotelDTO, GetHotelDTO>(createHotelDTO);
 
-          return CreatedAtAction("GetHotel", new { id = hotel.Id }, hotel);
+          return CreatedAtAction(nameof(GetHotel), new { id = hotel.Id }, hotel);
         }
 
         // DELETE: api/Hotels/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteHotel(int id)
         {
-            Hotel hotel = await _hotelsRepository.GetAsync(id);
+            //Hotel hotel = await _hotelsRepository.GetAsync(id);
 
-            if (hotel == null)
-            {
-                return NotFound();
-            }
+            //if (hotel == null)
+            //{
+            //    return NotFound();
+            //}
 
             await _hotelsRepository.DeleteAsync(id);
-
             return NoContent();
         }
 

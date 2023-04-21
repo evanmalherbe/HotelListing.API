@@ -68,12 +68,12 @@ namespace HotelListing.API.Core.Repository
 				.ToListAsync();
 		}
 
-		//public async Task<List<TResult>> GetAllAsync<TResult>()
-		//{
-		//	return await _context.Set<T>()
-		//			.ProjectTo<TResult>(_mapper.ConfigurationProvider)
-		//			.ToListAsync();
-		//}
+		public async Task<List<TResult>> GetAllAsync<TResult>()
+		{
+			return await _context.Set<T>()
+					.ProjectTo<TResult>(_mapper.ConfigurationProvider)
+					.ToListAsync();
+		}
 
 		public async Task<PagedResult<TResult>> GetAllPagedAsync<TResult>(QueryParameters queryParameters)
 		{

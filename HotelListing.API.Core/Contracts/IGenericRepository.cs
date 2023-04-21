@@ -7,7 +7,7 @@ namespace HotelListing.API.Core.Contracts
 		Task<T> GetAsync(int? id);
 		Task<TResult?> GetAsync<TResult>(int? id);
 		Task<List<T>> GetAllAsync();
-		//Task<List<TResult>> GetAllAsync<TResult>();
+		Task<List<TResult>> GetAllAsync<TResult>();
 		Task<PagedResult<TResult>> GetAllPagedAsync<TResult>(QueryParameters queryParameters);
 		Task<T> AddAsync(T entity);
 		Task<TResult> AddAsync<TSource, TResult>(TSource entity);
